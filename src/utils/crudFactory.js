@@ -12,7 +12,7 @@ const { asyncHandler, getPagination, paginatedResponse } = require('./helpers');
  * @param {string} [opts.orderBy] - columna de orden por defecto
  * @param {string[]} [opts.searchable] - columnas ILIKE para ?search=
  */
-function crudRouter({ table, insertable, orderBy = 'id', searchable = [] }) {
+function crudRouter({ table, insertable, orderBy = 'id', searchable = [], filterable = [] }) {
   const router = express.Router();
 
   router.get(
@@ -20,12 +20,19 @@ function crudRouter({ table, insertable, orderBy = 'id', searchable = [] }) {
     asyncHandler(async (req, res) => {
       const { page, perPage, offset } = getPagination(req);
       const params = [];
-      let where = '';
+      const conditions = [];
 
       if (req.query.search && searchable.length) {
         params.push(`%${req.query.search}%`);
-        where = `WHERE ${searchable.map((c) => `${c} ILIKE $${params.length}`).join(' OR ')}`;
+        conditions.push(`(${searchable.map((c) => `${c} ILIKE $${params.length}`).join(' OR ')})`);
       }
+      for (const col of filterable) {
+        if (req.query[col] !== undefined) {
+          params.push(req.query[col]);
+          conditions.push(`${col} = $${params.length}`);
+        }
+      }
+      const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
       const { rows: countRows } = await req.db.query(`SELECT COUNT(*) FROM ${table} ${where}`, params);
       params.push(perPage, offset);

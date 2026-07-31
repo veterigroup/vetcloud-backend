@@ -3,6 +3,9 @@ const { authenticate } = require('../middleware/auth.middleware');
 const { tenantContext } = require('../middleware/tenant.middleware');
 
 const authRoutes = require('./auth.routes');
+const usuariosRoutes = require('./usuarios.routes');
+const rolesRoutes = require('./roles.routes');
+const catalogosRoutes = require('./catalogos.routes');
 const clientesRoutes = require('./clientes.routes');
 const mascotasRoutes = require('./mascotas.routes');
 const citasRoutes = require('./citas.routes');
@@ -22,6 +25,9 @@ router.use('/auth', authRoutes);
 router.use(authenticate, tenantContext);
 
 router.use('/clientes', clientesRoutes);
+router.use('/usuarios', usuariosRoutes);
+router.use('/roles', rolesRoutes);
+router.use(catalogosRoutes); // expone /especies y /razas directamente
 router.use('/mascotas', mascotasRoutes);
 router.use('/citas', citasRoutes);
 router.use('/consultas', consultasRoutes);
