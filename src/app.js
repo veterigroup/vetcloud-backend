@@ -10,6 +10,11 @@ const { errorHandler } = require('./middleware/errorHandler.middleware');
 
 const app = express();
 
+// Railway (y la mayoría de PaaS) ponen la app detrás de un proxy que agrega
+// X-Forwarded-For. Sin esto, express-rate-limit lanza un error de validación
+// en cada request real y las peticiones se quedan colgadas sin respuesta.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
 app.use(express.json({ limit: '2mb' }));
