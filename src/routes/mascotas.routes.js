@@ -80,6 +80,25 @@ router.get(
   })
 );
 
+// PUT /mascotas/:id/historia-clinica — crea la ficha si no existe, o la actualiza si ya existe
+router.put(
+  '/:id/historia-clinica',
+  asyncHandler(async (req, res) => {
+    const { alergias, condiciones_preexistentes, observaciones_generales } = req.body;
+    const { rows } = await req.db.query(
+      `INSERT INTO historias_clinicas (mascota_id, tenant_id, alergias, condiciones_preexistentes, observaciones_generales)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (mascota_id) DO UPDATE SET
+         alergias = EXCLUDED.alergias,
+         condiciones_preexistentes = EXCLUDED.condiciones_preexistentes,
+         observaciones_generales = EXCLUDED.observaciones_generales
+       RETURNING *`,
+      [req.params.id, req.user.tenantId, alergias || null, condiciones_preexistentes || null, observaciones_generales || null]
+    );
+    res.json(rows[0]);
+  })
+);
+
 // GET /mascotas/:id/consultas — historial de consultas médicas
 router.get(
   '/:id/consultas',
@@ -182,6 +201,24 @@ router.post(
       descripcion: fecha_proxima_dosis ? `Próxima dosis: ${fecha_proxima_dosis}` : null,
       empleadoId: empleado_id,
     });
+
+    // Si se programó fecha de refuerzo, se crea la cita automáticamente —
+    // así aparece sola en "Próximas citas" del dashboard, sin pasos extra.
+    if (fecha_proxima_dosis) {
+      const { rows: mascotaRow } = await req.db.query('SELECT cliente_id FROM mascotas WHERE id = $1', [mascotaId]);
+      if (mascotaRow[0]) {
+        await req.db.query(
+          `INSERT INTO citas (tenant_id, mascota_id, cliente_id, fecha_hora, tipo_cita, motivo, estado, creado_por)
+           VALUES ($1,$2,$3,$4,'vacunacion',$5,'pendiente',$6)`,
+          [
+            req.user.tenantId, mascotaId, mascotaRow[0].cliente_id,
+            `${fecha_proxima_dosis} 09:00:00`,
+            `Refuerzo: ${vac[0]?.nombre || 'vacuna'}`,
+            req.user.id,
+          ]
+        );
+      }
+    }
 
     res.status(201).json(aplicada);
   })

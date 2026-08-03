@@ -9,10 +9,15 @@ router.get(
   asyncHandler(async (req, res) => {
     const [citasHoy, atendidasHoy, atendidasSemana, stockBajo, proximaCita] = await Promise.all([
       req.db.query("SELECT COUNT(*) FROM citas WHERE fecha_hora::date = CURRENT_DATE"),
-      req.db.query("SELECT COUNT(*) FROM citas WHERE fecha_hora::date = CURRENT_DATE AND estado = 'atendida'"),
       req.db.query(
-        `SELECT COUNT(*) FROM historial_eventos_mascota
-         WHERE tipo_evento = 'consulta' AND fecha >= date_trunc('week', CURRENT_DATE)`
+        `SELECT COUNT(DISTINCT mascota_id) FROM historial_eventos_mascota
+         WHERE tipo_evento IN ('consulta','tratamiento','vacuna','cirugia','examen')
+           AND fecha::date = CURRENT_DATE`
+      ),
+      req.db.query(
+        `SELECT COUNT(DISTINCT mascota_id) FROM historial_eventos_mascota
+         WHERE tipo_evento IN ('consulta','tratamiento','vacuna','cirugia','examen')
+           AND fecha >= date_trunc('week', CURRENT_DATE)`
       ),
       req.db.query("SELECT COUNT(*) FROM productos WHERE stock_actual <= stock_minimo AND estado = 'activo'"),
       req.db.query(
@@ -40,19 +45,19 @@ router.get(
 
     let query;
     if (periodo === 'diario') {
-      query = `SELECT to_char(fecha, 'HH24:00') AS etiqueta, COUNT(*) AS total
+      query = `SELECT to_char(fecha, 'HH24:00') AS etiqueta, COUNT(DISTINCT mascota_id) AS total
                FROM historial_eventos_mascota
-               WHERE tipo_evento = 'consulta' AND fecha::date = CURRENT_DATE
+               WHERE tipo_evento IN ('consulta','tratamiento','vacuna','cirugia','examen') AND fecha::date = CURRENT_DATE
                GROUP BY 1 ORDER BY 1`;
     } else if (periodo === 'semanal') {
-      query = `SELECT to_char(fecha, 'Dy') AS etiqueta, COUNT(*) AS total
+      query = `SELECT to_char(fecha, 'Dy') AS etiqueta, COUNT(DISTINCT mascota_id) AS total
                FROM historial_eventos_mascota
-               WHERE tipo_evento = 'consulta' AND fecha >= date_trunc('week', CURRENT_DATE)
+               WHERE tipo_evento IN ('consulta','tratamiento','vacuna','cirugia','examen') AND fecha >= date_trunc('week', CURRENT_DATE)
                GROUP BY 1, date_trunc('day', fecha) ORDER BY date_trunc('day', fecha)`;
     } else {
-      query = `SELECT 'Semana ' || to_char(fecha, 'W') AS etiqueta, COUNT(*) AS total
+      query = `SELECT 'Semana ' || to_char(fecha, 'W') AS etiqueta, COUNT(DISTINCT mascota_id) AS total
                FROM historial_eventos_mascota
-               WHERE tipo_evento = 'consulta' AND fecha >= date_trunc('month', CURRENT_DATE)
+               WHERE tipo_evento IN ('consulta','tratamiento','vacuna','cirugia','examen') AND fecha >= date_trunc('month', CURRENT_DATE)
                GROUP BY 1 ORDER BY 1`;
     }
 
