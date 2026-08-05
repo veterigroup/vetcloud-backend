@@ -1,39 +1,32 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
+/**
+ * Manejador de errores centralizado. Traduce errores comunes de Postgres
+ * a respuestas HTTP claras, sin filtrar detalles internos al cliente.
+ */
+function errorHandler(err, req, res, next) {
+  console.error(err);
 
-const routes = require('./routes');
-const { errorHandler } = require('./middleware/errorHandler.middleware');
+  // Violación de FK / NOT NULL / UNIQUE de Postgres
+  if (err.code === '23505') {
+    return res.status(409).json({ error: { code: 'DUPLICATE', message: 'Ya existe un registro con ese valor único' } });
+  }
+  if (err.code === '23503') {
+    return res.status(409).json({ error: { code: 'FK_VIOLATION', message: 'La operación viola una relación existente' } });
+  }
+  if (err.code === '23502') {
+    return res.status(400).json({ error: { code: 'NOT_NULL', message: 'Falta un campo obligatorio' } });
+  }
+  // RLS bloqueó la operación (row no visible / WITH CHECK falló)
+  if (err.code === '42501') {
+    return res.status(403).json({ error: { code: 'RLS_DENIED', message: 'No tienes acceso a este recurso' } });
+  }
 
-const app = express();
+  const status = err.status || 500;
+  res.status(status).json({
+    error: {
+      code: err.code || 'INTERNAL_ERROR',
+      message: status === 500 ? 'Error interno del servidor' : err.message,
+    },
+  });
+}
 
-// Railway (y la mayoría de PaaS) ponen la app detrás de un proxy que agrega
-// X-Forwarded-For. Sin esto, express-rate-limit lanza un error de validación
-// en cada request real y las peticiones se quedan colgadas sin respuesta.
-app.set('trust proxy', 1);
-
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
-app.use(express.json({ limit: '2mb' }));
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-
-app.use(
-  rateLimit({
-    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-    max: Number(process.env.RATE_LIMIT_MAX) || 300,
-    standardHeaders: true,
-    legacyHeaders: false,
-  })
-);
-
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
-
-app.use('/api/v1', routes);
-
-app.use((req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ruta no encontrada' } }));
-app.use(errorHandler);
-
-module.exports = app;
+module.exports = { errorHandler };
