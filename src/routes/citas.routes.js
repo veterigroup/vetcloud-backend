@@ -19,7 +19,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const { rows } = await req.db.query(
       `SELECT ${baseFields} ${baseJoins}
-       WHERE c.fecha_hora::date = CURRENT_DATE
+       WHERE (c.fecha_hora AT TIME ZONE 'America/Guayaquil')::date
+           = (NOW() AT TIME ZONE 'America/Guayaquil')::date
        ORDER BY c.fecha_hora`
     );
     res.json(rows);
