@@ -10,13 +10,13 @@ router.get(
     const [citasHoy, atendidasHoy, atendidasSemana, stockBajo, proximaCita] = await Promise.all([
       req.db.query(
         `SELECT COUNT(*) FROM citas
-         WHERE (fecha_hora AT TIME ZONE 'America/Guayaquil')::date
+         WHERE fecha_hora::date
              = (NOW() AT TIME ZONE 'America/Guayaquil')::date`
       ),
       req.db.query(
         `SELECT COUNT(DISTINCT mascota_id) FROM historial_eventos_mascota
          WHERE tipo_evento IN ('consulta','tratamiento','vacuna','cirugia','examen')
-           AND (fecha AT TIME ZONE 'America/Guayaquil')::date
+           AND fecha::date
              = (NOW() AT TIME ZONE 'America/Guayaquil')::date`
       ),
       req.db.query(
@@ -50,10 +50,10 @@ router.get(
 
     let query;
     if (periodo === 'diario') {
-      query = `SELECT to_char(fecha AT TIME ZONE 'America/Guayaquil', 'HH24:00') AS etiqueta, COUNT(DISTINCT mascota_id) AS total
+      query = `SELECT to_char(fecha, 'HH24:00') AS etiqueta, COUNT(DISTINCT mascota_id) AS total
                FROM historial_eventos_mascota
                WHERE tipo_evento IN ('consulta','tratamiento','vacuna','cirugia','examen')
-                 AND (fecha AT TIME ZONE 'America/Guayaquil')::date
+                 AND fecha::date
                    = (NOW() AT TIME ZONE 'America/Guayaquil')::date
                GROUP BY 1 ORDER BY 1`;
     } else if (periodo === 'semanal') {
@@ -82,7 +82,7 @@ router.get(
        FROM citas c
        JOIN mascotas m ON m.id = c.mascota_id
        JOIN clientes cl ON cl.id = c.cliente_id
-       WHERE (c.fecha_hora AT TIME ZONE 'America/Guayaquil')::date
+       WHERE c.fecha_hora::date
            = (NOW() AT TIME ZONE 'America/Guayaquil')::date
          AND c.estado NOT IN ('cancelada')
        ORDER BY c.fecha_hora LIMIT 8`
@@ -128,7 +128,7 @@ router.get(
        FROM empleados e
        JOIN usuarios u ON u.id = e.usuario_id
        LEFT JOIN citas c ON c.empleado_id = e.id
-         AND (c.fecha_hora AT TIME ZONE 'America/Guayaquil')::date
+         AND c.fecha_hora::date
              = (NOW() AT TIME ZONE 'America/Guayaquil')::date
          AND c.estado = 'atendida'
        WHERE e.tipo_empleado = 'doctor' AND e.estado = 'activo'
