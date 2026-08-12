@@ -83,4 +83,26 @@ router.use(
   })
 );
 
+// GET/POST /categorias-productos
+router.use(
+  '/categorias-productos',
+  crudRouter({
+    table: 'categorias_productos',
+    insertable: ['nombre', 'tipo'],
+    orderBy: 'nombre',
+    searchable: ['nombre'],
+  })
+);
+
+// GET/POST /proveedores
+router.use(
+  '/proveedores',
+  crudRouter({
+    table: 'proveedores',
+    insertable: ['ruc', 'razon_social', 'contacto', 'telefono', 'email', 'direccion'],
+    orderBy: 'razon_social',
+    searchable: ['razon_social', 'ruc'],
+  })
+);
+
 module.exports = router;
