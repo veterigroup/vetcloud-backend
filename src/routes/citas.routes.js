@@ -1,6 +1,6 @@
 const express = require('express');
 const { crudRouter } = require('../utils/crudFactory');
-const { asyncHandler } = require('../utils/helpers');
+const { asyncHandler, TENANT_TZ_SQL } = require('../utils/helpers');
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get(
     const { rows } = await req.db.query(
       `SELECT ${baseFields} ${baseJoins}
        WHERE c.fecha_hora::date
-           = (NOW() AT TIME ZONE 'America/Guayaquil')::date
+           = (NOW() AT TIME ZONE ${TENANT_TZ_SQL})::date
        ORDER BY c.fecha_hora`
     );
     res.json(rows);
