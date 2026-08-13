@@ -57,6 +57,24 @@ router.patch(
   })
 );
 
+// GET /citas/rango?desde=YYYY-MM-DD&hasta=YYYY-MM-DD — para la vista de agenda por día
+router.get(
+  '/rango',
+  asyncHandler(async (req, res) => {
+    const { desde, hasta } = req.query;
+    if (!desde || !hasta) {
+      return res.status(400).json({ error: { code: 'MISSING_RANGE', message: 'desde y hasta son requeridos (YYYY-MM-DD)' } });
+    }
+    const { rows } = await req.db.query(
+      `SELECT ${baseFields}, c.mascota_id, c.cliente_id, c.empleado_id ${baseJoins}
+       WHERE c.fecha_hora::date BETWEEN $1 AND $2
+       ORDER BY c.fecha_hora`,
+      [desde, hasta]
+    );
+    res.json(rows);
+  })
+);
+
 router.use(
   crudRouter({
     table: 'citas',

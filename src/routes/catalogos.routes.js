@@ -105,4 +105,19 @@ router.use(
   })
 );
 
+// GET /doctores — para el selector de citas
+router.get(
+  '/doctores',
+  asyncHandler(async (req, res) => {
+    const { rows } = await req.db.query(
+      `SELECT e.id, u.nombres, u.apellidos, e.especialidad
+       FROM empleados e
+       JOIN usuarios u ON u.id = e.usuario_id
+       WHERE e.tipo_empleado = 'doctor' AND e.estado = 'activo'
+       ORDER BY u.nombres`
+    );
+    res.json(rows);
+  })
+);
+
 module.exports = router;
