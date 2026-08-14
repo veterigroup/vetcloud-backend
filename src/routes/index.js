@@ -15,6 +15,8 @@ const proformasRoutes = require('./proformas.routes');
 const facturasRoutes = require('./facturas.routes');
 const cajaRoutes = require('./caja.routes');
 const dashboardRoutes = require('./dashboard.routes');
+const superadminRoutes = require('./superadmin.routes');
+const configuracionRoutes = require('./configuracion.routes');
 
 const router = express.Router();
 
@@ -36,5 +38,7 @@ router.use('/proformas', proformasRoutes);
 router.use('/facturas', facturasRoutes);
 router.use('/caja', cajaRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/superadmin', superadminRoutes);
+router.use('/configuracion', configuracionRoutes);
 
 module.exports = router;
