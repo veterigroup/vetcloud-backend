@@ -115,9 +115,9 @@ router.post(
     }
 
     const { rows } = await req.db.query(
-      `INSERT INTO caja_chica_movimientos (fondo_id, tipo_movimiento, categoria_gasto, concepto, monto, comprobante_url, empleado_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [req.params.id, tipo_movimiento, categoria_gasto, concepto, monto, comprobante_url, empleado_id]
+      `INSERT INTO caja_chica_movimientos (tenant_id, fondo_id, tipo_movimiento, categoria_gasto, concepto, monto, comprobante_url, empleado_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [req.user.tenantId, req.params.id, tipo_movimiento, categoria_gasto, concepto, monto, comprobante_url, empleado_id]
     );
 
     const delta = tipo_movimiento === 'reposicion' ? monto : -monto;

@@ -64,9 +64,9 @@ router.post(
 
     for (const it of items) {
       await req.db.query(
-        `INSERT INTO proforma_detalle (proforma_id, producto_id, tratamiento_id, descripcion, cantidad, precio_unitario, descuento, subtotal)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [proforma.id, it.producto_id || null, it.tratamiento_id || null, it.descripcion, it.cantidad, it.precio_unitario, it.descuento || 0, it.cantidad * it.precio_unitario - (it.descuento || 0)]
+        `INSERT INTO proforma_detalle (tenant_id, proforma_id, producto_id, tratamiento_id, descripcion, cantidad, precio_unitario, descuento, subtotal)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [req.user.tenantId, proforma.id, it.producto_id || null, it.tratamiento_id || null, it.descripcion, it.cantidad, it.precio_unitario, it.descuento || 0, it.cantidad * it.precio_unitario - (it.descuento || 0)]
       );
     }
 
@@ -139,9 +139,9 @@ router.post(
 
     for (const it of detalle) {
       await req.db.query(
-        `INSERT INTO factura_detalle (factura_id, producto_id, tratamiento_id, descripcion, cantidad, precio_unitario, descuento, subtotal)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [factura.id, it.producto_id, it.tratamiento_id, it.descripcion, it.cantidad, it.precio_unitario, it.descuento, it.subtotal]
+        `INSERT INTO factura_detalle (tenant_id, factura_id, producto_id, tratamiento_id, descripcion, cantidad, precio_unitario, descuento, subtotal)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [req.user.tenantId, factura.id, it.producto_id, it.tratamiento_id, it.descripcion, it.cantidad, it.precio_unitario, it.descuento, it.subtotal]
       );
     }
 
