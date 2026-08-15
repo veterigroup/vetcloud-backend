@@ -120,4 +120,13 @@ router.get(
   })
 );
 
+// GET /formas-pago — catálogo de formas de pago (efectivo, tarjeta, transferencia…)
+router.get(
+  '/formas-pago',
+  asyncHandler(async (req, res) => {
+    const { rows } = await req.db.query('SELECT id, nombre FROM formas_pago ORDER BY id');
+    res.json(rows);
+  })
+);
+
 module.exports = router;

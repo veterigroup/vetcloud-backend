@@ -43,12 +43,63 @@ router.get(
   })
 );
 
+// GET /caja/historial — últimas cajas abiertas/cerradas
+router.get(
+  '/historial',
+  requireRole('admin', 'contador', 'secretaria'),
+  asyncHandler(async (req, res) => {
+    const { rows } = await req.db.query(
+      `SELECT c.*, u.nombres AS empleado_nombres, u.apellidos AS empleado_apellidos
+       FROM caja c
+       LEFT JOIN empleados e ON e.id = c.empleado_id
+       LEFT JOIN usuarios u ON u.id = e.usuario_id
+       ORDER BY c.fecha_apertura DESC LIMIT 30`
+    );
+    res.json(rows);
+  })
+);
+
 // GET /caja-chica/fondos
 router.get(
   '/caja-chica/fondos',
   requireRole('admin', 'contador'),
   asyncHandler(async (req, res) => {
     const { rows } = await req.db.query('SELECT * FROM caja_chica_fondos ORDER BY nombre');
+    res.json(rows);
+  })
+);
+
+// POST /caja-chica/fondos — crea un fondo de caja chica nuevo
+router.post(
+  '/caja-chica/fondos',
+  requireRole('admin', 'contador'),
+  asyncHandler(async (req, res) => {
+    const { nombre, monto_asignado, responsable_id } = req.body;
+    if (!nombre || monto_asignado === undefined) {
+      return res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'nombre y monto_asignado son requeridos' } });
+    }
+    const { rows } = await req.db.query(
+      `INSERT INTO caja_chica_fondos (tenant_id, nombre, monto_asignado, saldo_actual, responsable_id)
+       VALUES ($1,$2,$3,$3,$4) RETURNING *`,
+      [req.user.tenantId, nombre, monto_asignado, responsable_id || null]
+    );
+    res.status(201).json(rows[0]);
+  })
+);
+
+// GET /caja-chica/:id/movimientos — historial de gastos/reposiciones de un fondo
+router.get(
+  '/caja-chica/:id/movimientos',
+  asyncHandler(async (req, res) => {
+    const { rows } = await req.db.query(
+      `SELECT m.*, e.usuario_id, u.nombres AS empleado_nombres, u.apellidos AS empleado_apellidos
+       FROM caja_chica_movimientos m
+       LEFT JOIN empleados e ON e.id = m.empleado_id
+       LEFT JOIN usuarios u ON u.id = e.usuario_id
+       WHERE m.fondo_id = $1
+       ORDER BY m.fecha DESC`,
+      [req.params.id]
+    );
     res.json(rows);
   })
 );
